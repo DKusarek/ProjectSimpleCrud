@@ -64,7 +64,7 @@ var userController = function (db) {
         }
     }
     var get = function (req, res) {
-        let sql = `SELECT Users.userId as id, Users.userName,Users.password, Users.firstName, Users.lastName, Users.dateOfBirth, user_group.groupId from Users LEFT JOIN user_group ON (Users.userId = user_group.userId)`;
+        let sql = `SELECT Users.userId as id, Users.userName,Users.password, Users.firstName, Users.lastName, Users.dateOfBirth, user_group.groupId,(SELECT g.groupName from Groups g where g.groupId = user_group.groupId) as groupName from Users LEFT JOIN user_group ON (Users.userId = user_group.userId)`;
         db.all(sql, [], (err, rows) => {
             if (err) {
                 res.status(500);
@@ -77,7 +77,7 @@ var userController = function (db) {
                     delete row.id;
                 });
                 res.status(200);
-                res.send(rows[0]);
+                res.send(rows);
             }
         });
     }

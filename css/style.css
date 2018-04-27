@@ -1,0 +1,15 @@
+table{
+    margin: 20px;
+}
+td{
+    padding: 20px;
+}
+.outputDivs{
+    margin: 50px;
+}
+.submitButton{
+    float: right;
+}
+.hidden{
+    display: none;
+}
