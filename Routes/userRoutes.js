@@ -8,7 +8,8 @@ var routes = function (db) {
         .get(userController.get);
     
     userRouter.use('/:userId', function (req, res, next) {
-        User.findById(req.params.userId, function (err, user) {
+        let sql = `SELECT * from Users where userId=${req.params.userId}`;
+        db.get(sql,[],function(err, user){
             if (err) {
                 res.status(500).send(err);
             } else if (user) {
@@ -19,7 +20,11 @@ var routes = function (db) {
             }
         });
     });
-    
+    userRouter.route('/:userId')
+        .get(userController.getId)
+        .put(userController.putId)
+        .patch(userController.patchId)
+        .delete(userController.deleteId);
     
     return userRouter;
 };

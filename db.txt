@@ -1,6 +1,6 @@
 CREATE TABLE Users(
     userId INTEGER PRIMARY KEY AUTOINCREMENT,
-    userName TEXT,
+    userName TEXT UNIQUE NOT NULL
     password TEXT,
     firstName TEXT,
     lastName TEXT,

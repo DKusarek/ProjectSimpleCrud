@@ -1,12 +1,12 @@
 var groupController = function (db) {
 
     var post = function (req, res) {
-        let sql = `INSERT INTO Groups (groupName) VALUES ('${req.body.groupName}')`;
         var errors = "";
         if (!req.body.groupName) {
             res.status(400);
             res.send('groupName is required');
         } else {
+            let sql = `INSERT INTO Groups (groupName) VALUES ('${req.body.groupName}')`;
             db.run(sql, function (err) {
                 if (err) {
                     errors += err.message + '\n';
@@ -74,11 +74,11 @@ var groupController = function (db) {
     }
 
     var putId = function (req, res) {
-        let sql = `UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`;
         if (!req.body.groupName) {
             res.status(400);
             res.send('groupName is required');
         } else {
+            let sql = `UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`;
             db.run(sql, function (err) {
                 if (err) {
                     res.send(err.message);
@@ -93,30 +93,36 @@ var groupController = function (db) {
     }
 
     var patchId = function (req, res) {
-        let sql = `UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`;
-        db.run(sql, function (err) {
+        var sql = "";
+        if (req.body.groupName != null && req.body.groupName != "") {
+            sql +=`UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`;
+        } 
+        if(sql!=""){
+            db.run(sql, function (err) {
             if (err) {
-                    res.send(err.message);
-                    res.status(500);
-                    return console.error(err.message);
-                } else {
-                    res.send('PATCH success');
-                    res.status(201);
-                }
+                res.send(err.message);
+                res.status(500);
+                return console.error(err.message);
+            } else {
+                res.send('PATCH success');
+                res.status(201);
+            }
         });
+        }
+        
     }
 
     var deleteId = function (req, res) {
         let sql = `DELETE FROM Groups WHERE groupId = '${req.group.groupId}'`;
         db.run(sql, function (err) {
             if (err) {
-                    res.send(err.message);
-                    res.status(500);
-                    return console.error(err.message);
-                } else {
-                    res.send("DELETE success");
-                    res.status(201);
-                }
+                res.send(err.message);
+                res.status(500);
+                return console.error(err.message);
+            } else {
+                res.send("DELETE success");
+                res.status(201);
+            }
         });
     }
 
