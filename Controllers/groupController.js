@@ -2,85 +2,124 @@ var groupController = function (db) {
 
     var post = function (req, res) {
         let sql = `INSERT INTO Groups (groupName) VALUES ('${req.body.groupName}')`;
-
+        var errors = "";
         if (!req.body.groupName) {
             res.status(400);
             res.send('groupName is required');
         } else {
             db.run(sql, function (err) {
                 if (err) {
+                    errors += err.message + '\n';
                     return console.error(err.message);
                 }
             });
         }
-        let sql2 = `SELECT groupId as id FROM Groups ORDER BY groupId DESC LIMIT 1`;
-        var id = 0;
-        db.get(sql2, [], (err, row) => {
-            if (err) {
-                throw err;
-                return console.error(err.message);
-            }
-            id = row.id;
-            let list = req.body.list;
-            let listLength = list.length;
-            var sql3 = "";
-            for (let i = 0; i < listLength; i++) {
-                var sql3 = `INSERT INTO user_group (userId,groupId) SELECT userId,${id} FROM Users WHERE userId= ${list[i]}`;
-                db.run(sql3, function (err) {
-                    if (err) {
-                        return console.error(err.message);
-                    }
-                });
-            }
+        if (errors == "") {
+            let sql2 = `SELECT groupId as id FROM Groups ORDER BY groupId DESC LIMIT 1`;
+            var id = 0;
+            db.get(sql2, [], (err, row) => {
+                if (err) {
+                    errors += err.message + '\n';
+                    return console.error(err.message);
+                }
+                id = row.id;
+                let list = req.body.list;
+                let listLength = list.length;
+                var sql3 = "";
+                for (let i = 0; i < listLength; i++) {
+                    var sql3 = `INSERT INTO user_group (userId,groupId) SELECT userId,${id} FROM Users WHERE userId= ${list[i]}`;
+                    db.run(sql3, function (err) {
+                        if (err) {
+                            errors += err.message + '\n';
+                            return console.error(err.message);
+                        }
+                    });
+                }
+                if (errors != "") {
+                    res.send(errors);
+                    res.status(500);
+                } else {
 
-            res.send('POST success');
-            res.status(201);
-        });
+                    res.send('POST success');
+                    res.status(201);
+                }
+            });
+        } else {
+            res.send(errors);
+            res.status(500);
+
+        }
+
     }
     var get = function (req, res) {
-        let sql = `SELECT * from Groups LEFT JOIN user_group ON Groups.groupId = user_group.groupId`;
-        //let sql = `SELECT * from user_group`;
+        let sql = `SELECT Groups.groupId as id, groupName, user_group.userId from Groups LEFT JOIN user_group ON Groups.groupId = user_group.groupId`;
+
         db.all(sql, [], (err, rows) => {
             if (err) {
+                res.status(500);
+                res.send(err.message);
                 throw err;
                 return console.error(err.message);
+            } else {
+                res.status(200);
+                res.send(rows);
             }
 
-            res.status(200);
-            res.send(rows);
 
         });
     }
     var getId = function (req, res) {
         res.json(req.group);
+        res.status(200);
     }
 
-    var put = function (req, res) {
+    var putId = function (req, res) {
         let sql = `UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`;
-        db.run(sql, function (err) {
-            if (err) {
-                return console.error(err.message);
-            }
-        });
-        res.send('PUT success');
-        res.status(201); //spr
+        if (!req.body.groupName) {
+            res.status(400);
+            res.send('groupName is required');
+        } else {
+            db.run(sql, function (err) {
+                if (err) {
+                    res.send(err.message);
+                    res.status(500);
+                    return console.error(err.message);
+                } else {
+                    res.send('PUT success');
+                    res.status(201);
+                }
+            });
+        }
     }
 
     var patchId = function (req, res) {
         let sql = `UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`;
         db.run(sql, function (err) {
             if (err) {
-                return console.error(err.message);
-            }
+                    res.send(err.message);
+                    res.status(500);
+                    return console.error(err.message);
+                } else {
+                    res.send('PATCH success');
+                    res.status(201);
+                }
         });
-        res.send('PUT success');
-        res.status(201); //spr
     }
-    
-    var deleteId = function(req,res){
-        
+
+    var deleteId = function (req, res) {
+        let sql = `DELETE FROM Groups WHERE groupId = '${req.group.groupId}'`;
+        db.run(sql, function (err) {
+            if (err) {
+                    res.send(err.message);
+                    res.status(500);
+                    return console.error(err.message);
+                } else {
+                    res.send("DELETE success");
+                    res.status(201);
+                }
+        });
     }
-    
+
     return {
         post: post,
         get: get,

@@ -22,7 +22,7 @@ var routes = function (db) {
     groupRouter.route('/:groupId')
         .get(groupController.getId)
         .put(groupController.putId)
-        .patch(groupContreoller.patchId)
+        .patch(groupController.patchId)
         .delete(groupController.deleteId);
     return groupRouter;
 };

@@ -9,12 +9,13 @@ CREATE TABLE Users(
 
 CREATE TABLE Groups(
     groupId INTEGER PRIMARY KEY AUTOINCREMENT,
-    groupName TEXT
+    groupName TEXT UNIQUE NOT NULL
 );
 
 CREATE TABLE user_group(
     userId INTEGER NOT NULL,
     groupId INTEGER NOT NULL,
+    PRIMARY KEY(userId, groupId),
     FOREIGN KEY(userId) REFERENCES Users(userId),
     FOREIGN KEY(groupId) REFERENCES Groups(groupId)
 );
