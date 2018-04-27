@@ -72,8 +72,12 @@ var userController = function (db) {
                 throw err;
                 return console.error(err.message);
             } else {
+                rows.forEach((row) => {
+                    row.userId = row.id;
+                    delete row.id;
+                });
                 res.status(200);
-                res.send(rows);
+                res.send(rows[0]);
             }
         });
     }
@@ -87,6 +91,10 @@ var userController = function (db) {
                 throw err;
                 return console.error(err.message);
             } else {
+                rows.forEach((row) => {
+                    row.userId = row.id;
+                    delete row.id;
+                });
                 res.status(200);
                 res.send(rows);
             }
@@ -109,7 +117,10 @@ var userController = function (db) {
         } else if (!req.body.dateOfBirth) {
             res.status(400);
             res.send('dateOfBirth is required');
-        } else {
+        } else if (!req.body.list) {
+            res.status(400);
+            res.send('list is required');
+        }else {
             let sql = `UPDATE Users SET userName = '${req.body.userName}',
                         password = '${req.body.password}',
                         firstName = '${req.body.firstName}',
@@ -152,20 +163,23 @@ var userController = function (db) {
         var sql = [];
         if (req.body.userName != null && req.body.userName != "") {
             sql.push(`UPDATE Users SET userName = '${req.body.userName}' WHERE userId = ${req.user.userId};`);
-        } else if (req.body.password != null && req.body.password != "") {
+        }
+        if (req.body.password != null && req.body.password != "") {
             sql.push(`UPDATE Users SET password = '${req.body.password}' WHERE userId = ${req.user.userId};`);
-        } else if (req.body.firstName != null && req.body.firstName != "") {
+        }
+        if (req.body.firstName != null && req.body.firstName != "") {
             sql.push(`UPDATE Users SET firstName = '${req.body.firstName}' WHERE userId = ${req.user.userId};`);
-        } else if (req.body.lastName != null && req.body.lastName != "") {
+        }
+        if (req.body.lastName != null && req.body.lastName != "") {
             sql.push(`UPDATE Users SET lastName = '${req.body.lastName}' WHERE userId = ${req.user.userId};`);
-        } else if (req.body.dateOfBirth != null && req.body.dateOfBirth != "") {
+        }
+        if (req.body.dateOfBirth != null && req.body.dateOfBirth != "") {
             sql.push(`UPDATE Users SET dateOfBirth = '${req.body.dateOfBirth}' WHERE userId = ${req.user.userId};`);
-        } else {
-            if (req.body.list != null) {
-                sql.push(`DELETE FROM user_group WHERE userId= ${req.user.userId};`);
-                for (let i = 0; i < req.body.list.length; i++) {
-                    sql.push(`INSERT INTO user_group (groupId,userId) SELECT groupId,${req.user.userId} FROM Groups WHERE groupId= ${req.body.list[i]};`);
-                }
+        }
+        if (req.body.list != null) {
+            sql.push(`DELETE FROM user_group WHERE userId= ${req.user.userId};`);
+            for (let i = 0; i < req.body.list.length; i++) {
+                sql.push(`INSERT INTO user_group (groupId,userId) SELECT groupId,${req.user.userId} FROM Groups WHERE groupId= ${req.body.list[i]};`);
             }
         }
         for (let i = 0; i < sql.length; i++) {

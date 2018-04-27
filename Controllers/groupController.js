@@ -61,6 +61,10 @@ var groupController = function (db) {
                 throw err;
                 return console.error(err.message);
             } else {
+                rows.forEach((row) => {
+                    row.groupId = row.id;
+                    delete row.id;
+                });
                 res.status(200);
                 res.send(rows);
             }
@@ -69,14 +73,31 @@ var groupController = function (db) {
         });
     }
     var getId = function (req, res) {
-        res.json(req.group);
-        res.status(200);
+        let sql = `SELECT Groups.groupId as id, groupName, user_group.userId from Groups LEFT JOIN user_group ON Groups.groupId = user_group.groupId WHERE Groups.groupId = ${req.group.groupId}`;
+        db.all(sql, [], (err, rows) => {
+            if (err) {
+                res.status(500);
+                res.send(err.message);
+                throw err;
+                return console.error(err.message);
+            } else {
+                rows.forEach((row) => {
+                    row.groupId = row.id;
+                    delete row.id;
+                });
+                res.status(200);
+                res.send(rows);
+            }
+        });
     }
 
     var putId = function (req, res) {
         if (!req.body.groupName) {
             res.status(400);
             res.send('groupName is required');
+        }else if(!req.body.list){
+            res.status(400);
+            res.send('list is required');
         } else {
             let sql = `UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`;
             db.run(sql, function (err) {
@@ -85,6 +106,25 @@ var groupController = function (db) {
                     res.status(500);
                     return console.error(err.message);
                 } else {
+                    let sql2 = `DELETE FROM user_group WHERE groupId= ${req.group.groupId};`;
+                    db.run(sql2, function (err) {
+                        if (err) {
+                            errors += err.message + '\n';
+                            return console.error(err.message);
+                        }
+                    });
+                    if (req.body.list.length > 0) {
+                        for (let i = 0; i < req.body.list.length; i++) {
+                            let sql3 = `INSERT INTO user_group (userId,groupId) SELECT userId,${req.group.groupId} FROM Users WHERE userId= ${req.body.list[i]};`;
+                            db.run(sql3, function (err) {
+                                if (err) {
+                                    errors += err.message + '\n';
+                                    return console.error(err.message);
+                                }
+                            });
+                        }
+
+                    }
                     res.send('PUT success');
                     res.status(201);
                 }
@@ -93,12 +133,18 @@ var groupController = function (db) {
     }
 
     var patchId = function (req, res) {
-        var sql = "";
+        var sql = [];
         if (req.body.groupName != null && req.body.groupName != "") {
-            sql +=`UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`;
+            sql.push(`UPDATE Groups SET groupName = '${req.body.groupName}' WHERE groupId = ${req.group.groupId}`);
         } 
-        if(sql!=""){
-            db.run(sql, function (err) {
+        if (req.body.list != null) {
+            sql.push(`DELETE FROM user_group WHERE groupId= ${req.group.groupId};`);
+            for (let i = 0; i < req.body.list.length; i++) {
+                sql.push(`INSERT INTO user_group (userId,groupId) SELECT userId,${req.group.groupId} FROM Users WHERE userId= ${req.body.list[i]};`);
+            }
+        }
+        for (let i = 0; i < sql.length; i++) {
+            db.run(sql[i], function (err) {
             if (err) {
                 res.send(err.message);
                 res.status(500);
@@ -120,8 +166,17 @@ var groupController = function (db) {
                 res.status(500);
                 return console.error(err.message);
             } else {
-                res.send("DELETE success");
-                res.status(201);
+                let sql2 = `DELETE FROM user_group WHERE groupId= ${req.group.groupId};'`;
+                db.run(sql2, function (err) {
+                    if (err) {
+                        res.send(err.message);
+                        res.status(500);
+                        return console.error(err.message);
+                    } else {
+                        res.send("DELETE success");
+                        res.status(201);
+                    }
+                });
             }
         });
     }
