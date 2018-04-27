@@ -64,7 +64,7 @@ var userController = function (db) {
         }
     }
     var get = function (req, res) {
-        let sql = `SELECT Users.userId as id, Users.userName,Users.password, Users.firstName, Users.lastName, Users.dateOfBirth, user_group.groupId from Users JOIN user_group ON (Users.userId = user_group.userId)`;
+        let sql = `SELECT Users.userId as id, Users.userName,Users.password, Users.firstName, Users.lastName, Users.dateOfBirth, user_group.groupId from Users LEFT JOIN user_group ON (Users.userId = user_group.userId)`;
         db.all(sql, [], (err, rows) => {
             if (err) {
                 res.status(500);
@@ -79,8 +79,18 @@ var userController = function (db) {
     }
 
     var getId = function (req, res) {
-        res.json(req.user);
-        res.status(200);
+        let sql = `SELECT Users.userId as id, Users.userName,Users.password, Users.firstName, Users.lastName, Users.dateOfBirth, user_group.groupId from Users LEFT JOIN user_group ON (Users.userId = user_group.userId) WHERE Users.userId = ${req.user.userId}`;
+        db.all(sql, [], (err, rows) => {
+            if (err) {
+                res.status(500);
+                res.send(err.message);
+                throw err;
+                return console.error(err.message);
+            } else {
+                res.status(200);
+                res.send(rows);
+            }
+        });
     }
 
     var putId = function (req, res) {
@@ -112,7 +122,26 @@ var userController = function (db) {
                     res.status(500);
                     return console.error(err.message);
                 } else {
-                    res.send('PUT success');
+                    let sql2 = `DELETE FROM user_group WHERE userId= ${req.user.userId};`;
+                    db.run(sql2, function (err) {
+                        if (err) {
+                            errors += err.message + '\n';
+                            return console.error(err.message);
+                        }
+                    });
+                    if (req.body.list.length > 0) {
+                        for (let i = 0; i < req.body.list.length; i++) {
+                            let sql3 = `INSERT INTO user_group (groupId,userId) SELECT groupId,${req.user.userId} FROM Groups WHERE groupId= ${req.body.list[i]};`;
+                            db.run(sql3, function (err) {
+                                if (err) {
+                                    errors += err.message + '\n';
+                                    return console.error(err.message);
+                                }
+                            });
+                        }
+
+                    }
+                    res.send("PUT succesfull");
                     res.status(201);
                 }
             });
@@ -120,35 +149,40 @@ var userController = function (db) {
     }
 
     var patchId = function (req, res) {
-        var sql = "";
+        var sql = [];
         if (req.body.userName != null && req.body.userName != "") {
-            sql += `UPDATE Users SET userName = '${req.body.userName}' WHERE userId = ${req.user.userId};`;
+            sql.push(`UPDATE Users SET userName = '${req.body.userName}' WHERE userId = ${req.user.userId};`);
         } else if (req.body.password != null && req.body.password != "") {
-            sql += `UPDATE Users SET password = '${req.body.password}' WHERE userId = ${req.user.userId};`;
+            sql.push(`UPDATE Users SET password = '${req.body.password}' WHERE userId = ${req.user.userId};`);
         } else if (req.body.firstName != null && req.body.firstName != "") {
-            sql += `UPDATE Users SET firstName = '${req.body.firstName}' WHERE userId = ${req.user.userId};`;
+            sql.push(`UPDATE Users SET firstName = '${req.body.firstName}' WHERE userId = ${req.user.userId};`);
         } else if (req.body.lastName != null && req.body.lastName != "") {
-            sql += `UPDATE Users SET lastName = '${req.body.lastName}' WHERE userId = ${req.user.userId};`;
+            sql.push(`UPDATE Users SET lastName = '${req.body.lastName}' WHERE userId = ${req.user.userId};`);
         } else if (req.body.dateOfBirth != null && req.body.dateOfBirth != "") {
-            sql += `UPDATE Users SET dateOfBirth = '${req.body.dateOfBirth}' WHERE userId = ${req.user.userId};`;
+            sql.push(`UPDATE Users SET dateOfBirth = '${req.body.dateOfBirth}' WHERE userId = ${req.user.userId};`);
         } else {
-            //list
+            if (req.body.list != null) {
+                sql.push(`DELETE FROM user_group WHERE userId= ${req.user.userId};`);
+                for (let i = 0; i < req.body.list.length; i++) {
+                    sql.push(`INSERT INTO user_group (groupId,userId) SELECT groupId,${req.user.userId} FROM Groups WHERE groupId= ${req.body.list[i]};`);
+                }
+            }
         }
-        if (sql != "") {
-            db.run(sql, function (err) {
+        for (let i = 0; i < sql.length; i++) {
+            db.run(sql[i], function (err) {
                 if (err) {
                     res.send(err.message);
                     res.status(500);
                     return console.error(err.message);
-                } else {
-                    res.send('PATCH success');
-                    res.status(201);
                 }
             });
         }
+
+        res.send('PATCH success');
+        res.status(201);
     }
 
-     var deleteId = function (req, res) {
+    var deleteId = function (req, res) {
         let sql = `DELETE FROM Users WHERE userId = '${req.user.userId}'`;
         db.run(sql, function (err) {
             if (err) {
@@ -156,12 +190,21 @@ var userController = function (db) {
                 res.status(500);
                 return console.error(err.message);
             } else {
-                res.send("DELETE success");
-                res.status(201);
+                let sql2 = `DELETE FROM user_group WHERE userId= ${req.user.userId};'`;
+                db.run(sql2, function (err) {
+                    if (err) {
+                        res.send(err.message);
+                        res.status(500);
+                        return console.error(err.message);
+                    } else {
+                        res.send("DELETE success");
+                        res.status(201);
+                    }
+                });
             }
         });
     }
-    
+
 
     return {
         post: post,
