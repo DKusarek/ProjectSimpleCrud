@@ -1,11 +1,14 @@
 $(document).ready(function () {
+    $.ajaxSetup({
+        cache: false
+    });
     var showCreateGroupForm = $('#showCreateGroupForm');
     var formCreateGroup = $('#formCreateGroup');
     var showReadGroupOutput = $('#showReadGroupOutput');
     var outputGroup = $('#outputGroup');
     var showDeleteGroupForm = $('#showDeleteGroupForm');
     var formDeleteGroup = $('#formDeleteGroup');
-    var showUpdateGroup = $('#showUpdateGroup');
+    var showUpdateGroupForm = $('#showUpdateGroupForm');
     var formUpdateGroup = $('#formUpdateGroup');
     var createGroup = $('#createGroup');
     var updateGroup = $('#updateGroup');
@@ -26,7 +29,7 @@ $(document).ready(function () {
                 $(data).each(function (i) {
 
                     html +=
-                        '<tr><td><i>userName: </i>' + this.userName + '</td><td><input type="checkbox" id="checkboxUser' + i + '"><input type="hidden" id="inputUser' + i + '" value="' + this._id + '"></td></tr>';
+                        '<tr><td><i>userName: </i>' + this.userName + '</td><td><input type="checkbox" id="checkboxUser' + i + '"><input type="hidden" id="inputUser' + i + '" value="' + this.userId + '"></td></tr>';
                     numberOfItems = i;
                 });
                 html += '</table>';
@@ -41,20 +44,17 @@ $(document).ready(function () {
 
     createGroup.click(function () {
         //validateCreateUserFields(); 
-        var userListString = [];
         var userList = [];
         for (let i = 0; i <= numberOfItems; i++) {
             var checkboxId = '#checkboxUser' + i;
             var inputId = '#inputUser' + i;
             if ($(checkboxId).is(":checked")) {
                 userList.push($(inputId).val());
-                userListString.push(String($(inputId).val()));
             }
         }
-        console.log(userListString);
         var data = JSON.stringify({
             groupName: $('#groupName').val(),
-            usersList: userListString
+            list: userList
         });
         var userId;
         $.ajax({
@@ -76,39 +76,30 @@ $(document).ready(function () {
     //READ
 
     showReadGroupOutput.click(function () {
-        var userList;
+        var data = {};
         $.ajax({
             type: 'GET',
             url: 'http://localhost:8000/api/groups',
             success: function (data, status, xhr) {
                 console.log('Status: ' + status);
                 var html = "";
-                var html2 = "";
+                var prevName = "";
                 $(data).each(function () {
-
-                    html += '<p><b><i>groupName: </i>' + this.groupName + '</b></p><p>Users: </p>';
-                    userList = this.usersList;
-                    console.log(userList);
-
-                    userList.forEach(function (item) {
-                        console.log('http://localhost:8000/api/users/' + item)
-                        $.ajax({
-                            type: 'GET',
-                            async: false,
-                            url: 'http://localhost:8000/api/users/' + item,
-                            success: function (data, status, xhr) {
-                                html2 += data.userName + '<br/>';
-                                console.log(html2);
-                            },
-                            error: function (xhr, status, error) {
-                                alert('Error occured: ' + status);
-                            }
-                        });
-                    });
-
+                    if (prevName != this.groupName) {
+                        html +=
+                            '</p><br/><p><i>groupName: </i>' + this.groupName + '</p>' +
+                            '<p><i>userNames: </i>';
+                        if (this.userName != null) {
+                            html += this.userName + ' ';
+                        }
+                        prevName = this.groupName;
+                    } else {
+                        if (this.userName != null) {
+                            html += this.userName + ' ';
+                        }
+                    }
                 });
-                html += html2;
-                console.log(html);
+                html += '</p>';
                 outputGroup.html(html);
                 outputGroup.toggleClass('hidden');
             },
@@ -129,13 +120,16 @@ $(document).ready(function () {
             url: 'http://localhost:8000/api/groups',
             success: function (data, status, xhr) {
                 var html = '<table>';
+                var prev = ""
                 $(data).each(function (i) {
-
-                    html +=
-                        '<tr><td><i>userName: </i>' + this.userName + '</td><td><input name="updateRadio" type="radio" id="radio' + i + '"><input type="hidden" id="inputU' + i + '" value="' + this._id + '"></td></tr>';
-                    numberOfItems = i;
+                    if (prev != this.groupName) {
+                        html +=
+                            '<tr><td><i>userName: </i>' + this.groupName + '</td><td><input name="updateRadio" type="radio" id="radioUG' + i + '"><input type="hidden" id="inputUG' + i + '" value="' + this.groupId + '"></td></tr>';
+                        numberOfItems = i;
+                    }
+                    prev=this.groupName;
                 });
-                html += '</table><br><button id="showUserDataToUpdate" class="btn btn-info btn-large btn-light submitButton">Update</button>';
+                html += '</table><br><button id="showGroupDataToUpdate" class="btn btn-info btn-large btn-light submitButton">Update</button>';
                 formUpdateGroup.html(html);
             },
             error: function (xhr, status, error) {
@@ -145,13 +139,12 @@ $(document).ready(function () {
 
     });
 
-    formUpdateGroup.on('click', '#showUserDataToUpdate', function () {
+    formUpdateGroup.on('click', '#showGroupDataToUpdate', function () {
         for (let i = 0; i <= numberOfItems; i++) {
-            var radioId = '#radio' + i;
-            var inputIdU = '#inputU' + i;
+            var radioId = '#radioUG' + i;
+            var inputIdU = '#inputUG' + i;
             var html = "";
             if ($(radioId).is(":checked")) {
-                console.log(radioId);
                 var url = 'http://localhost:8000/api/groups/' + $(inputIdU).val()
                 $.ajax({
                     type: 'GET',
@@ -159,18 +152,30 @@ $(document).ready(function () {
                     success: function (data, status, xhr) {
                         console.log("ss");
                         html += '<table><tr>' +
-                            '<td><label for="userNameU">userName</label></td>' +
-                            '<td><input type="text" name="userNameU" id="userNameU" value="' + data.userName + '"></td>' +
-                            '</tr><tr><td><label for="passwordU">Password</label></td>' +
-                            '<td><input type="password" name="passwordU" id="passwordU" value="' + data.password + '"></td>' +
-                            '</tr><tr><td><label for="firstNameU">firstName</label></td>' +
-                            '<td><input type="text" name="firstNameU" id="firstNameU" value="' + data.firstName + '"></td>' +
-                            '</tr><tr><td><label for="lastNameU">lastName</label></td><td>' +
-                            '<input type="text" name="lastNameU" id="lastNameU" value="' + data.lastName + '"></td></tr>' +
-                            '<tr><td> <label for="dateOfBirthU">dateOfBirth</label></td><td> ' +
-                            '<input type="date" name="dateOfBirthU" id="dateOfBirthU" value="' + data.dateOfBirth + '"></td></tr></table><button id="updateUser" class="btn btn-info btn-large btn-light submitButton">Update</button><input id="userToUpdate" type="hidden" value="' + data._id + '">';
+                            '<td><label for="userNameUG">userName</label></td>' +
+                            '<td><input type="text" name="userNameUG" id="userNameUG" value="' + data[0].groupName + '"></td></tr></table><button id="updateUser" class="btn btn-info btn-large btn-light submitButton">Update</button><input id="groupToUpdate" type="hidden" value="' + data[0].groupId + '"></td></tr>';
 
-                        formUpdateGroup.html(html);
+                        $.ajax({
+                            type: 'GET',
+                            url: 'http://localhost:8000/api/users',
+                            success: function (data, status, xhr) {
+                                var prevUserName = "";
+                                $(data).each(function (i) {
+                                    if (prevUserName != this.userName) {
+                                        html +=
+                                            '<tr><td><i>UserName: </i>' + this.userName + '</td><td><input type="checkbox" id="checkboxGU' + i + '"><input type="hidden" id="inputGU' + i + '" value="' + this.userId + '"></td></tr>';
+                                        numberOfItems = i;
+                                        prevUserName = this.userName;
+                                    }
+                                });
+                                html += '</table>';
+
+                                formUpdateGroup.html(html);
+                            },
+                            error: function (xhr, status, error) {
+                                alert('Error occured: ' + status);
+                            }
+                        });
                     },
                     error: function (xhr, status, error) {
                         alert('Error occured: ' + status);
@@ -183,13 +188,20 @@ $(document).ready(function () {
     });
 
     formUpdateGroup.on('click', '#updateUser', function () {
-        var inputId = $('#userToUpdate').val();
+        var userList = [];
+        for (let i = 0; i <= numberOfItems; i++) {
+            var checkboxId = '#checkboxGU' + i;
+            var inputId = '#inputGU' + i;
+            if ($(checkboxId).is(":checked")) {
+                userList.push($(inputId).val());
+                
+                console.log(userList);
+            }
+        }
+        var inputId = $('#groupToUpdate').val();
         var data = JSON.stringify({
-            userName: $('#userNameU').val(),
-            password: $('#passwordU').val(),
-            firstName: $('#firstNameU').val(),
-            lastName: $('#lastNameU').val(),
-            dateOfBirth: $('#dateOfBirthU').val()
+            groupName: $('#groupName').val(),
+            list: userList
         });
         var url = 'http://localhost:8000/api/groups/' + inputId;
         console.log(data);
@@ -219,13 +231,16 @@ $(document).ready(function () {
             url: 'http://localhost:8000/api/groups',
             success: function (data, status, xhr) {
                 var html = '<table>';
+                var prevName = "";
                 $(data).each(function (i) {
-
-                    html +=
-                        '<tr><td><i>userName: </i>' + this.userName + '</td><td><input type="checkbox" id="checkbox' + i + '"><input type="hidden" id="input' + i + '" value="' + this._id + '"></td></tr>';
-                    numberOfItems = i;
+                    if (prevName != this.groupName) {
+                        html +=
+                            '<tr><td><i>groupName: </i>' + this.groupName + '</td><td><input type="checkbox" id="checkboxDG' + i + '"><input type="hidden" id="inputDG' + i + '" value="' + this.groupId + '"></td></tr>';
+                        numberOfItems = i;
+                    }
+                    prevName = this.groupName;
                 });
-                html += '</table><br><button id="deleteUser" class="btn btn-info btn-large btn-light submitButton">Delete</button>';
+                html += '</table><br><button id="deleteGroup" class="btn btn-info btn-large btn-light submitButton">Delete</button>';
                 formDeleteGroup.html(html);
             },
             error: function (xhr, status, error) {
@@ -235,12 +250,12 @@ $(document).ready(function () {
 
     });
 
-    formDeleteGroup.on('click', '#deleteUser', function () {
+    formDeleteGroup.on('click', '#deleteGroup', function () {
         for (let i = 0; i <= numberOfItems; i++) {
-            var checkboxId = '#checkbox' + i;
-            var inputId = '#input' + i;
+            var checkboxId = '#checkboxDG' + i;
+            var inputId = '#inputDG' + i;
             if ($(checkboxId).is(":checked")) {
-                var url = 'http://localhost:8000/api/groups /' + $(inputId).val();
+                var url = 'http://localhost:8000/api/groups/' + $(inputId).val();
                 $.ajax({
                     type: 'DELETE',
                     url: url,

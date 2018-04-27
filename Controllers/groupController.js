@@ -52,7 +52,7 @@ var groupController = function (db) {
 
     }
     var get = function (req, res) {
-        let sql = `SELECT Groups.groupId as id, groupName, user_group.userId from Groups LEFT JOIN user_group ON Groups.groupId = user_group.groupId`;
+        let sql = `SELECT Groups.groupId as id, groupName, user_group.userId,(SELECT u.userName from Users u where u.userId = user_group.userId) as userName from Groups LEFT JOIN user_group ON Groups.groupId = user_group.groupId`;
 
         db.all(sql, [], (err, rows) => {
             if (err) {

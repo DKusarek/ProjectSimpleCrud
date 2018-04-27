@@ -1,4 +1,7 @@
 $(document).ready(function () {
+    $.ajaxSetup({
+        cache: false
+    });
     var showCreateUserForm = $('#showCreateUserForm');
     var formCreateUser = $('#formCreateUser');
     var showReadUserOutput = $('#showReadUserOutput');
@@ -59,7 +62,6 @@ $(document).ready(function () {
             dateOfBirth: $('#dateOfBirth').val(),
             list: groupList
         });
-        console.log(data);
         var userId;
         $.ajax({
             type: 'POST',
@@ -129,11 +131,14 @@ $(document).ready(function () {
             url: 'http://localhost:8000/api/users',
             success: function (data, status, xhr) {
                 var html = '<table>';
+                var prev = "";
                 $(data).each(function (i) {
-
-                    html +=
-                        '<tr><td><i>userName: </i>' + this.userName + '</td><td><input name="updateRadio" type="radio" id="radio' + i + '"><input type="hidden" id="inputU' + i + '" value="' + this.userId + '"></td></tr>';
-                    numberOfItems = i;
+                    if (prev != this.userName) {
+                        html +=
+                            '<tr><td><i>userName: </i>' + this.userName + '</td><td><input name="updateRadio" type="radio" id="radio' + i + '"><input type="hidden" id="inputU' + i + '" value="' + this.userId + '"></td></tr>';
+                        numberOfItems = i;
+                    }
+                    prev = this.userName;
                 });
                 html += '</table><br><button id="showUserDataToUpdate" class="btn btn-info btn-large btn-light submitButton">Update</button>';
                 formUpdateUser.html(html);
@@ -219,8 +224,6 @@ $(document).ready(function () {
             list: groupList
         });
         var url = 'http://localhost:8000/api/users/' + inputId;
-        console.log(data);
-        console.log(url);
         $.ajax({
             type: 'PATCH',
             url: url,
@@ -246,11 +249,14 @@ $(document).ready(function () {
             url: 'http://localhost:8000/api/users',
             success: function (data, status, xhr) {
                 var html = '<table>';
+                var prevName = "";
                 $(data).each(function (i) {
-
-                    html +=
-                        '<tr><td><i>userName: </i>' + this.userName + '</td><td><input type="checkbox" id="checkbox' + i + '"><input type="hidden" id="input' + i + '" value="' + this.userId + '"></td></tr>';
-                    numberOfItems = i;
+                    if (prevName != this.userName) {
+                        html +=
+                            '<tr><td><i>userName: </i>' + this.userName + '</td><td><input type="checkbox" id="checkbox' + i + '"><input type="hidden" id="input' + i + '" value="' + this.userId + '"></td></tr>';
+                        numberOfItems = i;
+                        prevName = this.userName;
+                    }
                 });
                 html += '</table><br><button id="deleteUser" class="btn btn-info btn-large btn-light submitButton">Delete</button>';
                 formDeleteUser.html(html);

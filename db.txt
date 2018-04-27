@@ -19,7 +19,3 @@ CREATE TABLE user_group(
     FOREIGN KEY(userId) REFERENCES Users(userId),
     FOREIGN KEY(groupId) REFERENCES Groups(groupId)
 );
-
-INSERT INTO Users (userName,password,firstName,lastName,dateOfBirth) VALUES ('user1','qwerty','Ala','Makota','10-10-1990');
-
-INSERT INTO Groups (groupName) VALUES ('Grupa1');
